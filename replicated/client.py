@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Any, Dict
 
 from .http_client import SyncHTTPClient
 from .services import CustomerService
@@ -19,7 +19,7 @@ class ReplicatedClient:
         self.app_slug = app_slug
         self.base_url = base_url
         self.timeout = timeout
-        
+
         self.http_client = SyncHTTPClient(
             base_url=base_url,
             timeout=timeout,
@@ -31,7 +31,7 @@ class ReplicatedClient:
         self.http_client.__enter__()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.http_client.__exit__(exc_type, exc_val, exc_tb)
 
     def _get_auth_headers(self) -> Dict[str, str]:

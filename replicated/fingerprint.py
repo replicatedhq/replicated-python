@@ -1,18 +1,16 @@
 import hashlib
 import platform
 import subprocess
-from typing import Optional
 
 
 def get_machine_fingerprint() -> str:
     """
     Get a unique machine fingerprint based on platform.
-    
+
     Returns a SHA256 hash of the platform-specific identifier.
     """
     system = platform.system().lower()
     identifier = ""
-    
     try:
         if system == "darwin":
             # macOS: Use IOPlatformUUID
@@ -42,9 +40,11 @@ def get_machine_fingerprint() -> str:
             # Windows: Use Machine GUID from registry
             result = subprocess.run(
                 [
-                    "reg", "query",
+                    "reg",
+                    "query",
                     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography",
-                    "/v", "MachineGuid"
+                    "/v",
+                    "MachineGuid",
                 ],
                 capture_output=True,
                 text=True,
@@ -57,11 +57,12 @@ def get_machine_fingerprint() -> str:
                         break
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError):
         pass
-    
+
     # Fallback: use a combination of system info
     if not identifier:
         import uuid
+
         identifier = str(uuid.getnode())  # MAC address as fallback
-    
+
     # Hash the identifier for privacy
     return hashlib.sha256(identifier.encode()).hexdigest()

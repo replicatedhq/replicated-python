@@ -1,14 +1,13 @@
 import json
-from typing import Dict, Any, Optional, Union
+from typing import Any, Dict, Optional
 
 import httpx
 
 from .exceptions import (
-    ReplicatedError,
     ReplicatedAPIError,
     ReplicatedAuthError,
-    ReplicatedRateLimitError,
     ReplicatedNetworkError,
+    ReplicatedRateLimitError,
 )
 
 
@@ -25,7 +24,9 @@ class HTTPClient:
         self.timeout = timeout
         self.default_headers = headers or {}
 
-    def _build_headers(self, headers: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    def _build_headers(
+        self, headers: Optional[Dict[str, str]] = None
+    ) -> Dict[str, str]:
         """Build request headers."""
         request_headers = {
             "Content-Type": "application/json",
@@ -46,7 +47,8 @@ class HTTPClient:
         if response.is_success:
             return json_body
 
-        error_message = json_body.get("message", f"HTTP {response.status_code}")
+        default_msg = f"HTTP {response.status_code}"
+        error_message = json_body.get("message", default_msg)
         error_code = json_body.get("code")
 
         if response.status_code == 401:
@@ -112,7 +114,7 @@ class HTTPClient:
 class SyncHTTPClient(HTTPClient):
     """Synchronous HTTP client."""
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._client: Optional[httpx.Client] = None
 
@@ -120,7 +122,7 @@ class SyncHTTPClient(HTTPClient):
         self._client = httpx.Client(timeout=self.timeout)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self._client:
             self._client.close()
             self._client = None
@@ -156,7 +158,7 @@ class SyncHTTPClient(HTTPClient):
 class AsyncHTTPClient(HTTPClient):
     """Asynchronous HTTP client."""
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._client: Optional[httpx.AsyncClient] = None
 
@@ -164,7 +166,7 @@ class AsyncHTTPClient(HTTPClient):
         self._client = httpx.AsyncClient(timeout=self.timeout)
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self._client:
             await self._client.aclose()
             self._client = None

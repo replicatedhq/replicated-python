@@ -1,6 +1,11 @@
-from typing import Dict, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 from .enums import InstanceStatus
 from .fingerprint import get_machine_fingerprint
+
+if TYPE_CHECKING:
+    from .async_client import AsyncReplicatedClient
+    from .client import ReplicatedClient
 
 
 class Customer:
@@ -22,9 +27,11 @@ class Customer:
 
     def get_or_create_instance(self) -> Union["Instance", "AsyncInstance"]:
         """Get or create an instance for this customer."""
-        if hasattr(self._client, '_get_or_create_instance_async'):
+        if hasattr(self._client, "_get_or_create_instance_async"):
+            # type: ignore[arg-type]
             return AsyncInstance(self._client, self.customer_id)
         else:
+            # type: ignore[arg-type]
             return Instance(self._client, self.customer_id)
 
     def __getattr__(self, name: str) -> Any:
@@ -35,8 +42,10 @@ class Customer:
 class AsyncCustomer(Customer):
     """Async version of Customer."""
 
+    # type: ignore[override]
     async def get_or_create_instance(self) -> "AsyncInstance":
         """Get or create an instance for this customer."""
+        # type: ignore[arg-type]
         return AsyncInstance(self._client, self.customer_id)
 
 
@@ -59,7 +68,7 @@ class Instance:
         """Send a metric for this instance."""
         if not self.instance_id:
             self._ensure_instance()
-        
+
         self._client.http_client._make_request(
             "POST",
             f"/api/v1/instances/{self.instance_id}/metrics",
@@ -71,7 +80,7 @@ class Instance:
         """Delete a metric for this instance."""
         if not self.instance_id:
             self._ensure_instance()
-        
+
         self._client.http_client._make_request(
             "DELETE",
             f"/api/v1/instances/{self.instance_id}/metrics/{name}",
@@ -82,7 +91,7 @@ class Instance:
         """Set the status of this instance."""
         if not self.instance_id:
             self._ensure_instance()
-        
+
         self._client.http_client._make_request(
             "PATCH",
             f"/api/v1/instances/{self.instance_id}",
@@ -94,7 +103,7 @@ class Instance:
         """Set the version of this instance."""
         if not self.instance_id:
             self._ensure_instance()
-        
+
         self._client.http_client._make_request(
             "PATCH",
             f"/api/v1/instances/{self.instance_id}",
@@ -121,7 +130,7 @@ class Instance:
             json_data={"fingerprint": fingerprint},
             headers=self._client._get_auth_headers(),
         )
-        
+
         self.instance_id = response["id"]
         self._client.state_manager.set_instance_id(self.instance_id)
 
@@ -149,7 +158,7 @@ class AsyncInstance:
         """Send a metric for this instance."""
         if not self.instance_id:
             await self._ensure_instance()
-        
+
         await self._client.http_client._make_request_async(
             "POST",
             f"/api/v1/instances/{self.instance_id}/metrics",
@@ -161,7 +170,7 @@ class AsyncInstance:
         """Delete a metric for this instance."""
         if not self.instance_id:
             await self._ensure_instance()
-        
+
         await self._client.http_client._make_request_async(
             "DELETE",
             f"/api/v1/instances/{self.instance_id}/metrics/{name}",
@@ -172,7 +181,7 @@ class AsyncInstance:
         """Set the status of this instance."""
         if not self.instance_id:
             await self._ensure_instance()
-        
+
         await self._client.http_client._make_request_async(
             "PATCH",
             f"/api/v1/instances/{self.instance_id}",
@@ -184,7 +193,7 @@ class AsyncInstance:
         """Set the version of this instance."""
         if not self.instance_id:
             await self._ensure_instance()
-        
+
         await self._client.http_client._make_request_async(
             "PATCH",
             f"/api/v1/instances/{self.instance_id}",
@@ -211,7 +220,7 @@ class AsyncInstance:
             json_data={"fingerprint": fingerprint},
             headers=self._client._get_auth_headers(),
         )
-        
+
         self.instance_id = response["id"]
         self._client.state_manager.set_instance_id(self.instance_id)
 

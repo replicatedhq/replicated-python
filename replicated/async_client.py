@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Any, Dict
 
 from .http_client import AsyncHTTPClient
 from .services import AsyncCustomerService
@@ -19,7 +19,7 @@ class AsyncReplicatedClient:
         self.app_slug = app_slug
         self.base_url = base_url
         self.timeout = timeout
-        
+
         self.http_client = AsyncHTTPClient(
             base_url=base_url,
             timeout=timeout,
@@ -31,7 +31,7 @@ class AsyncReplicatedClient:
         await self.http_client.__aenter__()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         await self.http_client.__aexit__(exc_type, exc_val, exc_tb)
 
     def _get_auth_headers(self) -> Dict[str, str]:

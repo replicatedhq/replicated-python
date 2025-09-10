@@ -61,11 +61,18 @@ target-version = ['py38']
 profile = "black"
 line_length = 88
 
+[tool.flake8]
+max-line-length = 88
+
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.9"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = "replicated.resources"
+disable_error_code = ["arg-type", "override", "unused-ignore"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
