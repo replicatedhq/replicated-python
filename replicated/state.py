@@ -2,7 +2,7 @@ import json
 import os
 import platform
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 
 class StateManager:
@@ -17,21 +17,23 @@ class StateManager:
     def _get_state_directory(self) -> Path:
         """Get the platform-specific state directory."""
         system = platform.system().lower()
-        
+
         if system == "darwin":
             # macOS: ~/Library/Application Support/Replicated/<app_slug>
             base_dir = Path.home() / "Library" / "Application Support"
         elif system == "windows":
             # Windows: %APPDATA%\Replicated\<app_slug>
-            base_dir = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
+            default_path = Path.home() / "AppData" / "Roaming"
+            appdata = os.environ.get("APPDATA", default_path)
+            base_dir = Path(appdata)
         else:
-            # Linux and others: ${XDG_STATE_HOME:-~/.local/state}/replicated/<app_slug>
+            # Linux: ${XDG_STATE_HOME:-~/.local/state}/replicated/<app_slug>
             xdg_state = os.environ.get("XDG_STATE_HOME")
             if xdg_state:
                 base_dir = Path(xdg_state)
             else:
                 base_dir = Path.home() / ".local" / "state"
-        
+
         return base_dir / "Replicated" / self.app_slug
 
     def _ensure_state_dir(self) -> None:
@@ -42,8 +44,9 @@ class StateManager:
         """Get the current state."""
         if self._state_file.exists():
             try:
-                with open(self._state_file, 'r') as f:
-                    return json.load(f)
+                with open(self._state_file, "r") as f:
+                    data = json.load(f)
+                    return data if isinstance(data, dict) else {}
             except (json.JSONDecodeError, OSError):
                 pass
         return {}
@@ -51,7 +54,7 @@ class StateManager:
     def save_state(self, state: Dict[str, Any]) -> None:
         """Save state to disk."""
         try:
-            with open(self._state_file, 'w') as f:
+            with open(self._state_file, "w") as f:
                 json.dump(state, f, indent=2)
         except OSError:
             pass  # Silently ignore write errors

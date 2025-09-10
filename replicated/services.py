@@ -1,5 +1,10 @@
-from typing import Optional, Union
-from .resources import Customer, AsyncCustomer
+from typing import TYPE_CHECKING, Optional
+
+from .resources import AsyncCustomer, Customer
+
+if TYPE_CHECKING:
+    from .async_client import AsyncReplicatedClient
+    from .client import ReplicatedClient
 
 
 class CustomerService:
@@ -41,14 +46,18 @@ class CustomerService:
 
         # Store dynamic token if provided
         if "dynamic_token" in response:
-            self._client.state_manager.set_dynamic_token(response["dynamic_token"])
+            dynamic_token = response["dynamic_token"]
+            self._client.state_manager.set_dynamic_token(dynamic_token)
+
+        response_data = response.copy()
+        response_data.pop("email_address", None)
 
         return Customer(
             self._client,
             customer_id,
             email_address,
             channel,
-            **response,
+            **response_data,
         )
 
 
@@ -91,12 +100,16 @@ class AsyncCustomerService:
 
         # Store dynamic token if provided
         if "dynamic_token" in response:
-            self._client.state_manager.set_dynamic_token(response["dynamic_token"])
+            dynamic_token = response["dynamic_token"]
+            self._client.state_manager.set_dynamic_token(dynamic_token)
+
+        response_data = response.copy()
+        response_data.pop("email_address", None)
 
         return AsyncCustomer(
             self._client,
             customer_id,
             email_address,
             channel,
-            **response,
+            **response_data,
         )

@@ -3,16 +3,18 @@
 Synchronous example of using the Replicated Python SDK.
 """
 
-from replicated import ReplicatedClient, InstanceStatus
+from replicated import InstanceStatus, ReplicatedClient
+
 
 def main():
     # Initialize the client with your publishable key and app slug
     with ReplicatedClient(
         publishable_key="replicated_pk_...",  # Replace with your actual key
-        app_slug="my-app"  # Replace with your app slug
+        app_slug="my-app",  # Replace with your app slug
     ) as client:
         # Create a customer (or fetch an existing one)
-        customer = client.customer.get_or_create(email_address="user@example.com")
+        email = "user@example.com"
+        customer = client.customer.get_or_create(email_address=email)
         print(f"Customer ID: {customer.customer_id}")
 
         # Get or create the associated instance

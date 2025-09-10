@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 
 class ReplicatedError(Exception):
@@ -31,19 +31,23 @@ class ReplicatedError(Exception):
 
 class ReplicatedAPIError(ReplicatedError):
     """Raised when the API returns an error response."""
+
     pass
 
 
 class ReplicatedAuthError(ReplicatedError):
     """Raised when authentication fails."""
+
     pass
 
 
 class ReplicatedRateLimitError(ReplicatedError):
     """Raised when rate limit is exceeded."""
+
     pass
 
 
 class ReplicatedNetworkError(ReplicatedError):
     """Raised when network communication fails."""
+
     pass
