@@ -1,0 +1,98 @@
+import json
+import os
+import platform
+from pathlib import Path
+from typing import Dict, Any, Optional
+
+
+class StateManager:
+    """Manages local SDK state for idempotency and caching."""
+
+    def __init__(self, app_slug: str) -> None:
+        self.app_slug = app_slug
+        self._state_dir = self._get_state_directory()
+        self._state_file = self._state_dir / "state.json"
+        self._ensure_state_dir()
+
+    def _get_state_directory(self) -> Path:
+        """Get the platform-specific state directory."""
+        system = platform.system().lower()
+        
+        if system == "darwin":
+            # macOS: ~/Library/Application Support/Replicated/<app_slug>
+            base_dir = Path.home() / "Library" / "Application Support"
+        elif system == "windows":
+            # Windows: %APPDATA%\Replicated\<app_slug>
+            base_dir = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
+        else:
+            # Linux and others: ${XDG_STATE_HOME:-~/.local/state}/replicated/<app_slug>
+            xdg_state = os.environ.get("XDG_STATE_HOME")
+            if xdg_state:
+                base_dir = Path(xdg_state)
+            else:
+                base_dir = Path.home() / ".local" / "state"
+        
+        return base_dir / "Replicated" / self.app_slug
+
+    def _ensure_state_dir(self) -> None:
+        """Ensure the state directory exists."""
+        self._state_dir.mkdir(parents=True, exist_ok=True)
+
+    def get_state(self) -> Dict[str, Any]:
+        """Get the current state."""
+        if self._state_file.exists():
+            try:
+                with open(self._state_file, 'r') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, OSError):
+                pass
+        return {}
+
+    def save_state(self, state: Dict[str, Any]) -> None:
+        """Save state to disk."""
+        try:
+            with open(self._state_file, 'w') as f:
+                json.dump(state, f, indent=2)
+        except OSError:
+            pass  # Silently ignore write errors
+
+    def get_customer_id(self) -> Optional[str]:
+        """Get the cached customer ID."""
+        state = self.get_state()
+        return state.get("customer_id")
+
+    def set_customer_id(self, customer_id: str) -> None:
+        """Set the customer ID in state."""
+        state = self.get_state()
+        state["customer_id"] = customer_id
+        self.save_state(state)
+
+    def get_instance_id(self) -> Optional[str]:
+        """Get the cached instance ID."""
+        state = self.get_state()
+        return state.get("instance_id")
+
+    def set_instance_id(self, instance_id: str) -> None:
+        """Set the instance ID in state."""
+        state = self.get_state()
+        state["instance_id"] = instance_id
+        self.save_state(state)
+
+    def get_dynamic_token(self) -> Optional[str]:
+        """Get the cached dynamic client token."""
+        state = self.get_state()
+        return state.get("dynamic_token")
+
+    def set_dynamic_token(self, token: str) -> None:
+        """Set the dynamic client token in state."""
+        state = self.get_state()
+        state["dynamic_token"] = token
+        self.save_state(state)
+
+    def clear_state(self) -> None:
+        """Clear all cached state."""
+        if self._state_file.exists():
+            try:
+                self._state_file.unlink()
+            except OSError:
+                pass
