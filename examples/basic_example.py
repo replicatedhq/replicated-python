@@ -38,13 +38,13 @@ def main():
         "--customer-name",
         help="Customer name (optional)"
     )
-    
+
     args = parser.parse_args()
-    
-    print(f"Initializing Replicated client...")
+
+    print("Initializing Replicated client...")
     print(f"Base URL: {args.base_url}")
     print(f"App Slug: {args.app_slug}")
-    
+
     # Initialize the client
     with ReplicatedClient(
         publishable_key=args.publishable_key,
@@ -52,23 +52,26 @@ def main():
         base_url=args.base_url,
     ) as client:
         print("✓ Replicated client initialized successfully")
-        
+
         # Create or get customer
         channel_info = f" (channel: {args.channel})" if args.channel else ""
         name_info = f" (name: {args.customer_name})" if args.customer_name else ""
-        print(f"\nCreating/getting customer with email: {args.customer_email}{channel_info}{name_info}")
+        print(
+            f"\nCreating/getting customer with email: "
+            f"{args.customer_email}{channel_info}{name_info}"
+        )
         customer = client.customer.get_or_create(
             email_address=args.customer_email,
             channel=args.channel,
             name=args.customer_name
         )
         print(f"✓ Customer created/retrieved - ID: {customer.customer_id}")
-        
+
         # Create or get instance
-        print(f"\nCreating/getting instance for customer...")
+        print("\nCreating/getting instance for customer...")
         instance = customer.get_or_create_instance()
         print(f"✓ Instance created/retrieved - ID: {instance.instance_id}")
-        
+
         print("\n🎉 Basic example completed successfully!")
         print(f"Customer ID: {customer.customer_id}")
         print(f"Instance ID: {instance.instance_id}")
