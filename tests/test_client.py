@@ -23,8 +23,11 @@ class TestReplicatedClient:
         mock_response = Mock()
         mock_response.is_success = True
         mock_response.json.return_value = {
-            "id": "customer_123",
-            "email_address": "test@example.com",
+            "customer": {
+                "id": "customer_123",
+                "email": "test@example.com",
+                "name": "test user",
+            }
         }
 
         mock_client = Mock()
