@@ -50,6 +50,11 @@ class HTTPClient:
         default_msg = f"HTTP {response.status_code}"
         error_message = json_body.get("message", default_msg)
         error_code = json_body.get("code")
+        
+        # Debug: print the full error response
+        print(f"DEBUG: HTTP {response.status_code} Error Response:")
+        print(f"DEBUG: Response body: {response.text}")
+        print(f"DEBUG: JSON body: {json_body}")
 
         if response.status_code == 401:
             raise ReplicatedAuthError(

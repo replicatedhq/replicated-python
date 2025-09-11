@@ -92,6 +92,17 @@ class StateManager:
         state["dynamic_token"] = token
         self.save_state(state)
 
+    def get_customer_email(self) -> Optional[str]:
+        """Get the cached customer email."""
+        state = self.get_state()
+        return state.get("customer_email")
+
+    def set_customer_email(self, email: str) -> None:
+        """Set the customer email in state."""
+        state = self.get_state()
+        state["customer_email"] = email
+        self.save_state(state)
+
     def clear_state(self) -> None:
         """Clear all cached state."""
         if self._state_file.exists():
