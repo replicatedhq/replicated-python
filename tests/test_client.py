@@ -26,7 +26,7 @@ class TestReplicatedClient:
             "customer": {
                 "id": "customer_123",
                 "email": "test@example.com",
-                "name": "test user"
+                "name": "test user",
             }
         }
 
