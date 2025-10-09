@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-from .enums import InstanceStatus
 from .fingerprint import get_machine_fingerprint
 
 if TYPE_CHECKING:
@@ -68,51 +67,17 @@ class Instance:
         """Send a metric for this instance."""
         if not self.instance_id:
             self._ensure_instance()
+            self._report_instance()
 
         self._client.http_client._make_request(
             "POST",
-            f"/application/custom-metrics/{name}",
-            json_data={"name": name, "value": value},
-            headers=self._client._get_auth_headers(),
-        )
-
-    def delete_metric(self, name: str) -> None:
-        """Delete a metric for this instance."""
-        if not self.instance_id:
-            self._ensure_instance()
-
-        self._client.http_client._make_request(
-            "DELETE",
-            f"/application/custom-metrics/{name}",
-            headers=self._client._get_auth_headers(),
-        )
-
-    def set_status(self, status: InstanceStatus) -> None:
-        """Set the status of this instance."""
-        if not self.instance_id:
-            self._ensure_instance()
-
-        self._client.http_client._make_request(
-            "PATCH",
-            f"/api/v1/instances/{self.instance_id}",
-            json_data={"status": status.value},
-            headers=self._client._get_auth_headers(),
-        )
-
-    def set_version(self, version: str) -> None:
-        """Set the version of this instance."""
-        if not self.instance_id:
-            self._ensure_instance()
-
-        self._client.http_client._make_request(
-            "PATCH",
-            f"/api/v1/instances/{self.instance_id}",
-            json_data={"version": version},
+            "/application/custom-metrics",
+            json_data={"data": {name: value}},
             headers=self._client._get_auth_headers(),
         )
 
     def _ensure_instance(self) -> None:
-        """Ensure the instance exists and is cached."""
+        """Ensure the instance ID is generated and cached."""
         if self.instance_id:
             return
 
@@ -122,17 +87,35 @@ class Instance:
             self.instance_id = cached_instance_id
             return
 
-        # Create new instance
+        # Generate deterministic instance_id from fingerprint
+        import uuid
         fingerprint = get_machine_fingerprint()
-        response = self._client.http_client._make_request(
-            "POST",
-            f"/api/v1/customers/{self.customer_id}/instances",
-            json_data={"fingerprint": fingerprint},
-            headers=self._client._get_auth_headers(),
-        )
+        # Use first 16 bytes of SHA256 hash as UUID
+        instance_id = str(uuid.UUID(bytes=bytes.fromhex(fingerprint[:32])))
 
-        self.instance_id = response["id"]
-        self._client.state_manager.set_instance_id(self.instance_id)
+        self.instance_id = instance_id
+        self._client.state_manager.set_instance_id(instance_id)
+
+    def _report_instance(self) -> None:
+        """Send instance telemetry to vandoor."""
+        if not self.instance_id:
+            self._ensure_instance()
+
+        # cluster_id is same as instance_id for non-K8s environments
+        headers = {
+            **self._client._get_auth_headers(),
+            "X-Replicated-InstanceID": self.instance_id,
+            "X-Replicated-ClusterID": self.instance_id,
+            "X-Replicated-AppStatus": "ready",
+            "X-Replicated-ReplicatedSDKVersion": "1.0.0",
+        }
+
+        self._client.http_client._make_request(
+            "POST",
+            "/kots_metrics/license_instance/info",
+            headers=headers,
+            json_data={},
+        )
 
     def __getattr__(self, name: str) -> Any:
         """Access additional instance data."""
@@ -158,51 +141,17 @@ class AsyncInstance:
         """Send a metric for this instance."""
         if not self.instance_id:
             await self._ensure_instance()
+            await self._report_instance()
 
         await self._client.http_client._make_request_async(
             "POST",
-            f"/application/custom-metrics",
-            json_data={"name": name, "value": value},
-            headers=self._client._get_auth_headers(),
-        )
-
-    async def delete_metric(self, name: str) -> None:
-        """Delete a metric for this instance."""
-        if not self.instance_id:
-            await self._ensure_instance()
-
-        await self._client.http_client._make_request_async(
-            "DELETE",
-            f"/application/custom-metrics/{name}",
-            headers=self._client._get_auth_headers(),
-        )
-
-    async def set_status(self, status: InstanceStatus) -> None:
-        """Set the status of this instance."""
-        if not self.instance_id:
-            await self._ensure_instance()
-
-        await self._client.http_client._make_request_async(
-            "PATCH",
-            f"/api/v1/instances/{self.instance_id}",
-            json_data={"status": status.value},
-            headers=self._client._get_auth_headers(),
-        )
-
-    async def set_version(self, version: str) -> None:
-        """Set the version of this instance."""
-        if not self.instance_id:
-            await self._ensure_instance()
-
-        await self._client.http_client._make_request_async(
-            "PATCH",
-            f"/api/v1/instances/{self.instance_id}",
-            json_data={"version": version},
+            "/application/custom-metrics",
+            json_data={"data": {name: value}},
             headers=self._client._get_auth_headers(),
         )
 
     async def _ensure_instance(self) -> None:
-        """Ensure the instance exists and is cached."""
+        """Ensure the instance ID is generated and cached."""
         if self.instance_id:
             return
 
@@ -212,17 +161,35 @@ class AsyncInstance:
             self.instance_id = cached_instance_id
             return
 
-        # Create new instance
+        # Generate deterministic instance_id from fingerprint
+        import uuid
         fingerprint = get_machine_fingerprint()
-        response = await self._client.http_client._make_request_async(
-            "POST",
-            f"/api/v1/customers/{self.customer_id}/instances",
-            json_data={"fingerprint": fingerprint},
-            headers=self._client._get_auth_headers(),
-        )
+        # Use first 16 bytes of SHA256 hash as UUID
+        instance_id = str(uuid.UUID(bytes=bytes.fromhex(fingerprint[:32])))
 
-        self.instance_id = response["id"]
-        self._client.state_manager.set_instance_id(self.instance_id)
+        self.instance_id = instance_id
+        self._client.state_manager.set_instance_id(instance_id)
+
+    async def _report_instance(self) -> None:
+        """Send instance telemetry to vandoor."""
+        if not self.instance_id:
+            await self._ensure_instance()
+
+        # cluster_id is same as instance_id for non-K8s environments
+        headers = {
+            **self._client._get_auth_headers(),
+            "X-Replicated-InstanceID": self.instance_id,
+            "X-Replicated-ClusterID": self.instance_id,
+            "X-Replicated-AppStatus": "ready",
+            "X-Replicated-ReplicatedSDKVersion": "1.0.0",
+        }
+
+        await self._client.http_client._make_request_async(
+            "POST",
+            "/kots_metrics/license_instance/info",
+            headers=headers,
+            json_data={},
+        )
 
     def __getattr__(self, name: str) -> Any:
         """Access additional instance data."""
