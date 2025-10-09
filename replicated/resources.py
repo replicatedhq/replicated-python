@@ -114,7 +114,8 @@ class Instance:
                 hostname = "unknown"
 
             # Create instance tags with hostname in correct format
-            instance_tags = {"force": False, "tags": {"name": hostname}}
+            # Use force=True to override the service account name that gets set automatically
+            instance_tags = {"force": True, "tags": {"name": hostname}}
             instance_tags_b64 = base64.b64encode(
                 json.dumps(instance_tags).encode()
             ).decode()
@@ -215,7 +216,8 @@ class AsyncInstance:
                 hostname = "unknown"
 
             # Create instance tags with hostname in correct format
-            instance_tags = {"force": False, "tags": {"name": hostname}}
+            # Use force=True to override the service account name that gets set automatically
+            instance_tags = {"force": True, "tags": {"name": hostname}}
             instance_tags_b64 = base64.b64encode(
                 json.dumps(instance_tags).encode()
             ).decode()
