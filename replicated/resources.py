@@ -184,7 +184,7 @@ class AsyncInstance:
             headers=self._client._get_auth_headers(),
         )
 
-    def set_status(self, status: str) -> None:
+    async def set_status(self, status: str) -> None:
         """Set the status of this instance for telemetry reporting."""
         self._status = status
         await self._report_instance()

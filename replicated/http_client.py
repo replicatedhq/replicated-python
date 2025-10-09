@@ -3,7 +3,6 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from . import __version__
 from .exceptions import (
     ReplicatedAPIError,
     ReplicatedAuthError,
@@ -29,6 +28,9 @@ class HTTPClient:
         self, headers: Optional[Dict[str, str]] = None
     ) -> Dict[str, str]:
         """Build request headers."""
+        # Import here to avoid circular import
+        from . import __version__
+
         # Format: "Replicated-SDK/{version}" as expected by Vandoor
         user_agent = f"Replicated-SDK/{__version__}"
         request_headers = {
