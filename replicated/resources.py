@@ -65,6 +65,7 @@ class Instance:
         self.customer_id = customer_id
         self.instance_id = instance_id
         self._data = kwargs
+        self._status = "ready"
 
     def send_metric(self, name: str, value: Union[int, float, str]) -> None:
         """Send a metric for this instance."""
@@ -78,6 +79,13 @@ class Instance:
             json_data={"data": {name: value}},
             headers=self._client._get_auth_headers(),
         )
+
+    def set_status(self, status: str) -> None:
+        """Set the status of this instance for telemetry reporting."""
+        if not self.instance_id:
+            self._ensure_instance()
+        self._status = status
+        self._report_instance()
 
     def _ensure_instance(self) -> None:
         """Ensure the instance ID is generated and cached."""
@@ -128,8 +136,7 @@ class Instance:
                 **self._client._get_auth_headers(),
                 "X-Replicated-InstanceID": self.instance_id,
                 "X-Replicated-ClusterID": self.instance_id,
-                "X-Replicated-AppStatus": "ready",
-                "X-Replicated-ReplicatedSDKVersion": "1.0.0",
+                "X-Replicated-AppStatus": self._status,
                 "X-Replicated-InstanceTagData": instance_tags_b64,
             }
 
@@ -162,6 +169,7 @@ class AsyncInstance:
         self.customer_id = customer_id
         self.instance_id = instance_id
         self._data = kwargs
+        self._status = "ready"
 
     async def send_metric(self, name: str, value: Union[int, float, str]) -> None:
         """Send a metric for this instance."""
@@ -175,6 +183,11 @@ class AsyncInstance:
             json_data={"data": {name: value}},
             headers=self._client._get_auth_headers(),
         )
+
+    def set_status(self, status: str) -> None:
+        """Set the status of this instance for telemetry reporting."""
+        self._status = status
+        await self._report_instance()
 
     async def _ensure_instance(self) -> None:
         """Ensure the instance ID is generated and cached."""
@@ -225,8 +238,7 @@ class AsyncInstance:
                 **self._client._get_auth_headers(),
                 "X-Replicated-InstanceID": self.instance_id,
                 "X-Replicated-ClusterID": self.instance_id,
-                "X-Replicated-AppStatus": "ready",
-                "X-Replicated-ReplicatedSDKVersion": "1.0.0",
+                "X-Replicated-AppStatus": self._status,
                 "X-Replicated-InstanceTagData": instance_tags_b64,
             }
 
