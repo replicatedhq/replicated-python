@@ -71,7 +71,7 @@ class Instance:
 
         self._client.http_client._make_request(
             "POST",
-            f"/api/v1/instances/{self.instance_id}/metrics",
+            f"/v1/instances/{self.instance_id}/metrics",
             json_data={"name": name, "value": value},
             headers=self._client._get_auth_headers(),
         )
@@ -83,7 +83,7 @@ class Instance:
 
         self._client.http_client._make_request(
             "DELETE",
-            f"/api/v1/instances/{self.instance_id}/metrics/{name}",
+            f"/application/custom-metrics/{name}",
             headers=self._client._get_auth_headers(),
         )
 
@@ -161,7 +161,7 @@ class AsyncInstance:
 
         await self._client.http_client._make_request_async(
             "POST",
-            f"/api/v1/instances/{self.instance_id}/metrics",
+            f"/application/custom-metrics",
             json_data={"name": name, "value": value},
             headers=self._client._get_auth_headers(),
         )
@@ -173,7 +173,7 @@ class AsyncInstance:
 
         await self._client.http_client._make_request_async(
             "DELETE",
-            f"/api/v1/instances/{self.instance_id}/metrics/{name}",
+            f"/application/custom-metrics/{name}",
             headers=self._client._get_auth_headers(),
         )
 
