@@ -89,6 +89,7 @@ class Instance:
 
         # Generate deterministic instance_id from fingerprint
         import uuid
+
         fingerprint = get_machine_fingerprint()
         # Use first 16 bytes of SHA256 hash as UUID
         instance_id = str(uuid.UUID(bytes=bytes.fromhex(fingerprint[:32])))
@@ -102,6 +103,22 @@ class Instance:
             self._ensure_instance()
 
         try:
+            import base64
+            import json
+            import socket
+
+            # Get hostname for instance tag
+            try:
+                hostname = socket.gethostname()
+            except Exception:
+                hostname = "unknown"
+
+            # Create instance tags with hostname
+            instance_tags = {"name": hostname}
+            instance_tags_b64 = base64.b64encode(
+                json.dumps(instance_tags).encode()
+            ).decode()
+
             # cluster_id is same as instance_id for non-K8s environments
             headers = {
                 **self._client._get_auth_headers(),
@@ -109,6 +126,7 @@ class Instance:
                 "X-Replicated-ClusterID": self.instance_id,
                 "X-Replicated-AppStatus": "ready",
                 "X-Replicated-ReplicatedSDKVersion": "1.0.0",
+                "X-Replicated-InstanceTagData": instance_tags_b64,
             }
 
             self._client.http_client._make_request(
@@ -167,6 +185,7 @@ class AsyncInstance:
 
         # Generate deterministic instance_id from fingerprint
         import uuid
+
         fingerprint = get_machine_fingerprint()
         # Use first 16 bytes of SHA256 hash as UUID
         instance_id = str(uuid.UUID(bytes=bytes.fromhex(fingerprint[:32])))
@@ -180,6 +199,22 @@ class AsyncInstance:
             await self._ensure_instance()
 
         try:
+            import base64
+            import json
+            import socket
+
+            # Get hostname for instance tag
+            try:
+                hostname = socket.gethostname()
+            except Exception:
+                hostname = "unknown"
+
+            # Create instance tags with hostname
+            instance_tags = {"name": hostname}
+            instance_tags_b64 = base64.b64encode(
+                json.dumps(instance_tags).encode()
+            ).decode()
+
             # cluster_id is same as instance_id for non-K8s environments
             headers = {
                 **self._client._get_auth_headers(),
@@ -187,6 +222,7 @@ class AsyncInstance:
                 "X-Replicated-ClusterID": self.instance_id,
                 "X-Replicated-AppStatus": "ready",
                 "X-Replicated-ReplicatedSDKVersion": "1.0.0",
+                "X-Replicated-InstanceTagData": instance_tags_b64,
             }
 
             await self._client.http_client._make_request_async(
