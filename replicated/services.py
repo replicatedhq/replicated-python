@@ -89,10 +89,6 @@ class AsyncCustomerService:
         cached_email = self._client.state_manager.get_customer_email()
 
         if cached_customer_id and cached_email == email_address:
-            print(
-                f"DEBUG: Using cached customer ID {cached_customer_id} "
-                f"for email {email_address}"
-            )
             return AsyncCustomer(
                 self._client,
                 cached_customer_id,
