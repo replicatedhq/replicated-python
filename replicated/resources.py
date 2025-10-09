@@ -71,7 +71,7 @@ class Instance:
 
         self._client.http_client._make_request(
             "POST",
-            f"/v1/instances/{self.instance_id}/metrics",
+            f"/application/custom-metrics/{name}",
             json_data={"name": name, "value": value},
             headers=self._client._get_auth_headers(),
         )
