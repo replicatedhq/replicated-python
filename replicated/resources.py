@@ -1,6 +1,9 @@
+import logging
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from .fingerprint import get_machine_fingerprint
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .async_client import AsyncReplicatedClient
@@ -110,7 +113,8 @@ class Instance:
             # Get hostname for instance tag
             try:
                 hostname = socket.gethostname()
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to get hostname: {e}")
                 hostname = "unknown"
 
             # Create instance tags with hostname as instance name
@@ -135,9 +139,9 @@ class Instance:
                 headers=headers,
                 json_data={},
             )
-        except Exception:
+        except Exception as e:
             # Telemetry is optional - don't fail if it doesn't work
-            pass
+            logger.debug(f"Failed to report instance telemetry: {e}")
 
     def __getattr__(self, name: str) -> Any:
         """Access additional instance data."""
@@ -206,7 +210,8 @@ class AsyncInstance:
             # Get hostname for instance tag
             try:
                 hostname = socket.gethostname()
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to get hostname: {e}")
                 hostname = "unknown"
 
             # Create instance tags with hostname as instance name
@@ -231,9 +236,9 @@ class AsyncInstance:
                 headers=headers,
                 json_data={},
             )
-        except Exception:
+        except Exception as e:
             # Telemetry is optional - don't fail if it doesn't work
-            pass
+            logger.debug(f"Failed to report instance telemetry: {e}")
 
     def __getattr__(self, name: str) -> Any:
         """Access additional instance data."""
