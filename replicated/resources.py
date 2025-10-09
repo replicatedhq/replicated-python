@@ -101,21 +101,25 @@ class Instance:
         if not self.instance_id:
             self._ensure_instance()
 
-        # cluster_id is same as instance_id for non-K8s environments
-        headers = {
-            **self._client._get_auth_headers(),
-            "X-Replicated-InstanceID": self.instance_id,
-            "X-Replicated-ClusterID": self.instance_id,
-            "X-Replicated-AppStatus": "ready",
-            "X-Replicated-ReplicatedSDKVersion": "1.0.0",
-        }
+        try:
+            # cluster_id is same as instance_id for non-K8s environments
+            headers = {
+                **self._client._get_auth_headers(),
+                "X-Replicated-InstanceID": self.instance_id,
+                "X-Replicated-ClusterID": self.instance_id,
+                "X-Replicated-AppStatus": "ready",
+                "X-Replicated-ReplicatedSDKVersion": "1.0.0",
+            }
 
-        self._client.http_client._make_request(
-            "POST",
-            "/kots_metrics/license_instance/info",
-            headers=headers,
-            json_data={},
-        )
+            self._client.http_client._make_request(
+                "POST",
+                "/kots_metrics/license_instance/info",
+                headers=headers,
+                json_data={},
+            )
+        except Exception:
+            # Telemetry is optional - don't fail if it doesn't work
+            pass
 
     def __getattr__(self, name: str) -> Any:
         """Access additional instance data."""
@@ -175,21 +179,25 @@ class AsyncInstance:
         if not self.instance_id:
             await self._ensure_instance()
 
-        # cluster_id is same as instance_id for non-K8s environments
-        headers = {
-            **self._client._get_auth_headers(),
-            "X-Replicated-InstanceID": self.instance_id,
-            "X-Replicated-ClusterID": self.instance_id,
-            "X-Replicated-AppStatus": "ready",
-            "X-Replicated-ReplicatedSDKVersion": "1.0.0",
-        }
+        try:
+            # cluster_id is same as instance_id for non-K8s environments
+            headers = {
+                **self._client._get_auth_headers(),
+                "X-Replicated-InstanceID": self.instance_id,
+                "X-Replicated-ClusterID": self.instance_id,
+                "X-Replicated-AppStatus": "ready",
+                "X-Replicated-ReplicatedSDKVersion": "1.0.0",
+            }
 
-        await self._client.http_client._make_request_async(
-            "POST",
-            "/kots_metrics/license_instance/info",
-            headers=headers,
-            json_data={},
-        )
+            await self._client.http_client._make_request_async(
+                "POST",
+                "/kots_metrics/license_instance/info",
+                headers=headers,
+                json_data={},
+            )
+        except Exception:
+            # Telemetry is optional - don't fail if it doesn't work
+            pass
 
     def __getattr__(self, name: str) -> Any:
         """Access additional instance data."""
