@@ -130,19 +130,14 @@ class Instance:
                 "X-Replicated-InstanceTagData": instance_tags_b64,
             }
 
-            print(f"DEBUG: Sending telemetry with hostname tag: {hostname}")
-            print(f"DEBUG: Instance tags (base64): {instance_tags_b64}")
-
             self._client.http_client._make_request(
                 "POST",
                 "/kots_metrics/license_instance/info",
                 headers=headers,
                 json_data={},
             )
-            print("DEBUG: Telemetry sent successfully")
-        except Exception as e:
+        except Exception:
             # Telemetry is optional - don't fail if it doesn't work
-            print(f"DEBUG: Telemetry failed: {e}")
             pass
 
     def __getattr__(self, name: str) -> Any:
@@ -232,19 +227,14 @@ class AsyncInstance:
                 "X-Replicated-InstanceTagData": instance_tags_b64,
             }
 
-            print(f"DEBUG: Sending telemetry with hostname tag: {hostname}")
-            print(f"DEBUG: Instance tags (base64): {instance_tags_b64}")
-
             await self._client.http_client._make_request_async(
                 "POST",
                 "/kots_metrics/license_instance/info",
                 headers=headers,
                 json_data={},
             )
-            print("DEBUG: Telemetry sent successfully")
-        except Exception as e:
+        except Exception:
             # Telemetry is optional - don't fail if it doesn't work
-            print(f"DEBUG: Telemetry failed: {e}")
             pass
 
     def __getattr__(self, name: str) -> Any:

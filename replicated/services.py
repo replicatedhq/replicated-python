@@ -25,10 +25,6 @@ class CustomerService:
         cached_email = self._client.state_manager.get_customer_email()
 
         if cached_customer_id and cached_email == email_address:
-            print(
-                f"DEBUG: Using cached customer ID {cached_customer_id} "
-                f"for email {email_address}"
-            )
             return Customer(
                 self._client,
                 cached_customer_id,
@@ -36,10 +32,6 @@ class CustomerService:
                 channel,
             )
         elif cached_customer_id and cached_email != email_address:
-            print(
-                f"DEBUG: Email changed from {cached_email} to "
-                f"{email_address}, clearing cache"
-            )
             self._client.state_manager.clear_state()
 
         # Create or fetch customer
@@ -55,7 +47,6 @@ class CustomerService:
             headers=self._client._get_auth_headers(),
         )
 
-        print(f"DEBUG: API Response: {response}")
         customer_id = response["customer"]["id"]
         self._client.state_manager.set_customer_id(customer_id)
         self._client.state_manager.set_customer_email(email_address)
@@ -67,7 +58,6 @@ class CustomerService:
         elif "customer" in response and "serviceToken" in response["customer"]:
             service_token = response["customer"]["serviceToken"]
             self._client.state_manager.set_dynamic_token(service_token)
-            print(f"DEBUG: Stored service token: {service_token[:20]}...")
 
         response_data = response.copy()
         response_data.pop("email_address", None)
@@ -110,10 +100,6 @@ class AsyncCustomerService:
                 channel,
             )
         elif cached_customer_id and cached_email != email_address:
-            print(
-                f"DEBUG: Email changed from {cached_email} to "
-                f"{email_address}, clearing cache"
-            )
             self._client.state_manager.clear_state()
 
         # Create or fetch customer
@@ -129,7 +115,6 @@ class AsyncCustomerService:
             headers=self._client._get_auth_headers(),
         )
 
-        print(f"DEBUG: API Response: {response}")
         customer_id = response["customer"]["id"]
         self._client.state_manager.set_customer_id(customer_id)
         self._client.state_manager.set_customer_email(email_address)
@@ -141,7 +126,6 @@ class AsyncCustomerService:
         elif "customer" in response and "serviceToken" in response["customer"]:
             service_token = response["customer"]["serviceToken"]
             self._client.state_manager.set_dynamic_token(service_token)
-            print(f"DEBUG: Stored service token: {service_token[:20]}...")
 
         response_data = response.copy()
         response_data.pop("email_address", None)
