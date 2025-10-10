@@ -84,6 +84,7 @@ class Instance:
         """Set the status of this instance for telemetry reporting."""
         if not self.instance_id:
             self._ensure_instance()
+
         self._status = status
         self._report_instance()
 
@@ -98,15 +99,17 @@ class Instance:
             self.instance_id = cached_instance_id
             return
 
-        # Generate deterministic instance_id from fingerprint
-        import uuid
-
+        # Create new instance
         fingerprint = get_machine_fingerprint()
-        # Use first 16 bytes of SHA256 hash as UUID
-        instance_id = str(uuid.UUID(bytes=bytes.fromhex(fingerprint[:32])))
+        response = self._client.http_client._make_request(
+            "POST",
+            f"/api/v1/customers/{self.customer_id}/instances",
+            json_data={"fingerprint": fingerprint},
+            headers=self._client._get_auth_headers(),
+        )
 
-        self.instance_id = instance_id
-        self._client.state_manager.set_instance_id(instance_id)
+        self.instance_id = response["id"]
+        self._client.state_manager.set_instance_id(self.instance_id)
 
     def _report_instance(self) -> None:
         """Send instance telemetry to vandoor."""
