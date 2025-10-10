@@ -66,6 +66,7 @@ class Instance:
         self.instance_id = instance_id
         self._data = kwargs
         self._status = "ready"
+        self._metrics: dict[str, Union[int, float, str]] = {}
 
     def send_metric(self, name: str, value: Union[int, float, str]) -> None:
         """Send a metric for this instance."""
@@ -73,11 +74,22 @@ class Instance:
             self._ensure_instance()
             self._report_instance()
 
+        # Merge metric with existing metrics (overwrite = false behavior)
+        self._metrics[name] = value
+
+        # Build headers with instance data
+        headers = {
+            **self._client._get_auth_headers(),
+            "X-Replicated-InstanceID": self.instance_id,
+            "X-Replicated-ClusterID": self.instance_id,
+            "X-Replicated-AppStatus": self._status,
+        }
+
         self._client.http_client._make_request(
             "POST",
             "/application/custom-metrics",
-            json_data={"data": {name: value}},
-            headers=self._client._get_auth_headers(),
+            json_data={"data": self._metrics},
+            headers=headers,
         )
 
     def set_status(self, status: str) -> None:
@@ -173,6 +185,7 @@ class AsyncInstance:
         self.instance_id = instance_id
         self._data = kwargs
         self._status = "ready"
+        self._metrics: dict[str, Union[int, float, str]] = {}
 
     async def send_metric(self, name: str, value: Union[int, float, str]) -> None:
         """Send a metric for this instance."""
@@ -180,11 +193,22 @@ class AsyncInstance:
             await self._ensure_instance()
             await self._report_instance()
 
+        # Merge metric with existing metrics (overwrite = false behavior)
+        self._metrics[name] = value
+
+        # Build headers with instance data
+        headers = {
+            **self._client._get_auth_headers(),
+            "X-Replicated-InstanceID": self.instance_id,
+            "X-Replicated-ClusterID": self.instance_id,
+            "X-Replicated-AppStatus": self._status,
+        }
+
         await self._client.http_client._make_request_async(
             "POST",
             "/application/custom-metrics",
-            json_data={"data": {name: value}},
-            headers=self._client._get_auth_headers(),
+            json_data={"data": self._metrics},
+            headers=headers,
         )
 
     async def set_status(self, status: str) -> None:
