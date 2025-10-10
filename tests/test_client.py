@@ -27,6 +27,8 @@ class TestReplicatedClient:
                 "id": "customer_123",
                 "email": "test@example.com",
                 "name": "test user",
+                "serviceToken": "service_token_123",
+                "instanceId": "instance_123",
             }
         }
 
