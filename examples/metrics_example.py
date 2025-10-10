@@ -32,6 +32,12 @@ async def main():
     )
     parser.add_argument("--channel", help="Channel for the customer (optional)")
     parser.add_argument("--customer-name", help="Customer name (optional)")
+    parser.add_argument(
+        "--status",
+        choices=["missing", "unavailable", "ready", "updating", "degraded"],
+        default="ready",
+        help="Instance status (default: ready)",
+    )
 
     args = parser.parse_args()
 
@@ -69,6 +75,10 @@ async def main():
         # Get or create the associated instance
         instance = await customer.get_or_create_instance()
         print(f"Instance ID: {instance.instance_id}")
+
+        # Set instance status
+        await instance.set_status(args.status)
+        print(f"✓ Instance status set to: {args.status}")
 
         # Send some metrics concurrently
         await asyncio.gather(
