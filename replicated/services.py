@@ -48,8 +48,10 @@ class CustomerService:
         )
 
         customer_id = response["customer"]["id"]
+        instance_id = response["customer"]["instanceId"]
         self._client.state_manager.set_customer_id(customer_id)
         self._client.state_manager.set_customer_email(email_address)
+        self._client.state_manager.set_instance_id(instance_id)
 
         # Store dynamic token if provided
         if "dynamic_token" in response:
@@ -112,8 +114,10 @@ class AsyncCustomerService:
         )
 
         customer_id = response["customer"]["id"]
+        instance_id = response["customer"]["instanceId"]
         self._client.state_manager.set_customer_id(customer_id)
         self._client.state_manager.set_customer_email(email_address)
+        self._client.state_manager.set_instance_id(instance_id)
 
         # Store dynamic token if provided
         if "dynamic_token" in response:

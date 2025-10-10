@@ -31,10 +31,10 @@ class Customer:
         """Get or create an instance for this customer."""
         if hasattr(self._client, "_get_or_create_instance_async"):
             # type: ignore[arg-type]
-            return AsyncInstance(self._client, self.customer_id)
+            return AsyncInstance(self._client, self.customer_id, self.instance_id)
         else:
             # type: ignore[arg-type]
-            return Instance(self._client, self.customer_id)
+            return Instance(self._client, self.customer_id, self.instance_id)
 
     def __getattr__(self, name: str) -> Any:
         """Access additional customer data."""
@@ -48,7 +48,7 @@ class AsyncCustomer(Customer):
     async def get_or_create_instance(self) -> "AsyncInstance":
         """Get or create an instance for this customer."""
         # type: ignore[arg-type]
-        return AsyncInstance(self._client, self.customer_id)
+        return AsyncInstance(self._client, self.customer_id, self.instance_id)
 
 
 class Instance:
@@ -72,7 +72,6 @@ class Instance:
         """Send a metric for this instance."""
         if not self.instance_id:
             self._ensure_instance()
-            self._report_instance()
 
         # Merge metric with existing metrics (overwrite = false behavior)
         self._metrics[name] = value
@@ -115,12 +114,15 @@ class Instance:
         fingerprint = get_machine_fingerprint()
         response = self._client.http_client._make_request(
             "POST",
-            f"/api/v1/customers/{self.customer_id}/instances",
-            json_data={"fingerprint": fingerprint},
+            "/v3/instance",
+            json_data={
+                "machine_fingerprint": fingerprint,
+                "app_status": "missing",
+            },
             headers=self._client._get_auth_headers(),
         )
 
-        self.instance_id = response["id"]
+        self.instance_id = response["instance_id"]
         self._client.state_manager.set_instance_id(self.instance_id)
 
     def _report_instance(self) -> None:
@@ -191,7 +193,6 @@ class AsyncInstance:
         """Send a metric for this instance."""
         if not self.instance_id:
             await self._ensure_instance()
-            await self._report_instance()
 
         # Merge metric with existing metrics (overwrite = false behavior)
         self._metrics[name] = value
@@ -213,6 +214,9 @@ class AsyncInstance:
 
     async def set_status(self, status: str) -> None:
         """Set the status of this instance for telemetry reporting."""
+        if not self.instance_id:
+            await self._ensure_instance()
+
         self._status = status
         await self._report_instance()
 
@@ -227,15 +231,20 @@ class AsyncInstance:
             self.instance_id = cached_instance_id
             return
 
-        # Generate deterministic instance_id from fingerprint
-        import uuid
-
+        # Create new instance
         fingerprint = get_machine_fingerprint()
-        # Use first 16 bytes of SHA256 hash as UUID
-        instance_id = str(uuid.UUID(bytes=bytes.fromhex(fingerprint[:32])))
+        response = await self._client.http_client._make_request_async(
+            "POST",
+            "/v3/instance",
+            json_data={
+                "machine_fingerprint": fingerprint,
+                "app_status": "missing",
+            },
+            headers=self._client._get_auth_headers(),
+        )
 
-        self.instance_id = instance_id
-        self._client.state_manager.set_instance_id(instance_id)
+        self.instance_id = response["instance_id"]
+        self._client.state_manager.set_instance_id(self.instance_id)
 
     async def _report_instance(self) -> None:
         """Send instance telemetry to vandoor."""
