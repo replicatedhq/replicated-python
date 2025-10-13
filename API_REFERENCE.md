@@ -56,15 +56,17 @@ ReplicatedClient(
     publishable_key: str,
     app_slug: str,
     base_url: str = "https://replicated.app",
-    timeout: float = 30.0
+    timeout: float = 30.0,
+    state_directory: Optional[str] = None
 )
 ```
 
 **Parameters:**
 - `publishable_key`: Your publishable API key from the Vendor Portal
 - `app_slug`: Your application slug
-- `base_url`: Base URL for the API (optional)
-- `timeout`: Request timeout in seconds (optional)
+- `base_url`: Base URL for the API (optional, defaults to "https://replicated.app")
+- `timeout`: Request timeout in seconds (optional, defaults to 30.0)
+- `state_directory`: Custom directory for state storage (optional). If not provided, uses platform-specific defaults. Supports `~` expansion and relative paths.
 
 #### Methods
 
@@ -160,10 +162,31 @@ The SDK automatically manages local state for:
 
 ### State Directory
 
-State is stored in platform-specific directories:
+State is stored in platform-specific directories by default:
 - **macOS:** `~/Library/Application Support/Replicated/<app_slug>`
 - **Linux:** `${XDG_STATE_HOME:-~/.local/state}/replicated/<app_slug>`
 - **Windows:** `%APPDATA%\Replicated\<app_slug>`
+
+You can override the state directory by providing the `state_directory` parameter:
+
+```python
+client = ReplicatedClient(
+    publishable_key="...",
+    app_slug="my-app",
+    state_directory="/custom/path/to/state"
+)
+```
+
+**Path Handling:**
+- The SDK automatically expands `~` to your home directory
+- Relative paths are resolved to absolute paths
+- The directory will be created automatically if it doesn't exist
+
+**Use Cases for Custom Directories:**
+- **Testing:** Use temporary directories for isolated test runs
+- **Containers:** Mount persistent volumes at custom paths
+- **Multi-tenant:** Isolate state per tenant in separate directories
+- **Development:** Use project-local directories for development state
 
 ## Machine Fingerprinting
 

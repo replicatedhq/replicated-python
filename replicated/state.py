@@ -8,9 +8,16 @@ from typing import Any, Dict, Optional
 class StateManager:
     """Manages local SDK state for idempotency and caching."""
 
-    def __init__(self, app_slug: str) -> None:
+    def __init__(self, app_slug: str, state_directory: Optional[str] = None) -> None:
         self.app_slug = app_slug
-        self._state_dir = self._get_state_directory()
+
+        # Use provided directory or derive platform-specific one
+        if state_directory:
+            # Normalize path: expand ~ and resolve relative paths
+            self._state_dir = Path(state_directory).expanduser().resolve()
+        else:
+            self._state_dir = self._get_state_directory()
+
         self._state_file = self._state_dir / "state.json"
         self._ensure_state_dir()
 
