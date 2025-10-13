@@ -41,6 +41,8 @@ class ReplicatedClient:
         # Try to use dynamic token first, fall back to publishable key
         dynamic_token = self.state_manager.get_dynamic_token()
         if dynamic_token:
-            return {"Authorization": f"Bearer {dynamic_token}"}
+            # Service tokens are sent without Bearer prefix
+            return {"Authorization": dynamic_token}
         else:
+            # Publishable keys use Bearer prefix
             return {"Authorization": f"Bearer {self.publishable_key}"}

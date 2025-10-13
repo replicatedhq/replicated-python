@@ -28,9 +28,14 @@ class HTTPClient:
         self, headers: Optional[Dict[str, str]] = None
     ) -> Dict[str, str]:
         """Build request headers."""
+        # Import here to avoid circular import
+        from . import __version__
+
+        # Format: "Replicated-SDK/{version}" as expected by Vandoor
+        user_agent = f"Replicated-SDK/{__version__}"
         request_headers = {
             "Content-Type": "application/json",
-            "User-Agent": "replicated-python/1.0.0",
+            "User-Agent": user_agent,
             **self.default_headers,
         }
         if headers:
@@ -50,11 +55,6 @@ class HTTPClient:
         default_msg = f"HTTP {response.status_code}"
         error_message = json_body.get("message", default_msg)
         error_code = json_body.get("code")
-
-        # Debug: print the full error response
-        print(f"DEBUG: HTTP {response.status_code} Error Response:")
-        print(f"DEBUG: Response body: {response.text}")
-        print(f"DEBUG: JSON body: {json_body}")
 
         if response.status_code == 401:
             raise ReplicatedAuthError(

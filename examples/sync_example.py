@@ -3,7 +3,7 @@
 Synchronous example of using the Replicated Python SDK.
 """
 
-from replicated import InstanceStatus, ReplicatedClient
+from replicated import ReplicatedClient
 
 
 def main():
@@ -26,14 +26,6 @@ def main():
         instance.send_metric("memory_usage", 0.67)
         instance.send_metric("disk_usage", 0.45)
         print("Metrics sent successfully")
-
-        # Set the instance status
-        instance.set_status(InstanceStatus.RUNNING)
-        print("Instance status set to RUNNING")
-
-        # Set the application version
-        instance.set_version("1.2.0")
-        print("Instance version set to 1.2.0")
 
         print("Example completed successfully!")
 

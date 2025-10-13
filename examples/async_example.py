@@ -5,7 +5,7 @@ Asynchronous example of using the Replicated Python SDK.
 
 import asyncio
 
-from replicated import AsyncReplicatedClient, InstanceStatus
+from replicated import AsyncReplicatedClient
 
 
 async def main():
@@ -30,13 +30,6 @@ async def main():
             instance.send_metric("disk_usage", 0.45),
         )
         print("Metrics sent successfully")
-
-        # Set the instance status and version concurrently
-        await asyncio.gather(
-            instance.set_status(InstanceStatus.RUNNING),
-            instance.set_version("1.2.0"),
-        )
-        print("Instance status set to RUNNING and version set to 1.2.0")
 
         print("Example completed successfully!")
 

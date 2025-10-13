@@ -1,7 +1,9 @@
+import logging
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-from .enums import InstanceStatus
 from .fingerprint import get_machine_fingerprint
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .async_client import AsyncReplicatedClient
@@ -29,10 +31,10 @@ class Customer:
         """Get or create an instance for this customer."""
         if hasattr(self._client, "_get_or_create_instance_async"):
             # type: ignore[arg-type]
-            return AsyncInstance(self._client, self.customer_id)
+            return AsyncInstance(self._client, self.customer_id, self.instance_id)
         else:
             # type: ignore[arg-type]
-            return Instance(self._client, self.customer_id)
+            return Instance(self._client, self.customer_id, self.instance_id)
 
     def __getattr__(self, name: str) -> Any:
         """Access additional customer data."""
@@ -46,7 +48,7 @@ class AsyncCustomer(Customer):
     async def get_or_create_instance(self) -> "AsyncInstance":
         """Get or create an instance for this customer."""
         # type: ignore[arg-type]
-        return AsyncInstance(self._client, self.customer_id)
+        return AsyncInstance(self._client, self.customer_id, self.instance_id)
 
 
 class Instance:
@@ -63,56 +65,42 @@ class Instance:
         self.customer_id = customer_id
         self.instance_id = instance_id
         self._data = kwargs
+        self._status = "ready"
+        self._metrics: dict[str, Union[int, float, str]] = {}
 
     def send_metric(self, name: str, value: Union[int, float, str]) -> None:
         """Send a metric for this instance."""
         if not self.instance_id:
             self._ensure_instance()
 
+        # Merge metric with existing metrics (overwrite = false behavior)
+        self._metrics[name] = value
+
+        # Build headers with instance data
+        headers = {
+            **self._client._get_auth_headers(),
+            "X-Replicated-InstanceID": self.instance_id,
+            "X-Replicated-ClusterID": self.instance_id,
+            "X-Replicated-AppStatus": self._status,
+        }
+
         self._client.http_client._make_request(
             "POST",
-            f"/api/v1/instances/{self.instance_id}/metrics",
-            json_data={"name": name, "value": value},
-            headers=self._client._get_auth_headers(),
+            "/application/custom-metrics",
+            json_data={"data": self._metrics},
+            headers=headers,
         )
 
-    def delete_metric(self, name: str) -> None:
-        """Delete a metric for this instance."""
+    def set_status(self, status: str) -> None:
+        """Set the status of this instance for telemetry reporting."""
         if not self.instance_id:
             self._ensure_instance()
 
-        self._client.http_client._make_request(
-            "DELETE",
-            f"/api/v1/instances/{self.instance_id}/metrics/{name}",
-            headers=self._client._get_auth_headers(),
-        )
-
-    def set_status(self, status: InstanceStatus) -> None:
-        """Set the status of this instance."""
-        if not self.instance_id:
-            self._ensure_instance()
-
-        self._client.http_client._make_request(
-            "PATCH",
-            f"/api/v1/instances/{self.instance_id}",
-            json_data={"status": status.value},
-            headers=self._client._get_auth_headers(),
-        )
-
-    def set_version(self, version: str) -> None:
-        """Set the version of this instance."""
-        if not self.instance_id:
-            self._ensure_instance()
-
-        self._client.http_client._make_request(
-            "PATCH",
-            f"/api/v1/instances/{self.instance_id}",
-            json_data={"version": version},
-            headers=self._client._get_auth_headers(),
-        )
+        self._status = status
+        self._report_instance()
 
     def _ensure_instance(self) -> None:
-        """Ensure the instance exists and is cached."""
+        """Ensure the instance ID is generated and cached."""
         if self.instance_id:
             return
 
@@ -126,13 +114,58 @@ class Instance:
         fingerprint = get_machine_fingerprint()
         response = self._client.http_client._make_request(
             "POST",
-            f"/api/v1/customers/{self.customer_id}/instances",
-            json_data={"fingerprint": fingerprint},
+            "/v3/instance",
+            json_data={
+                "machine_fingerprint": fingerprint,
+                "app_status": "missing",
+            },
             headers=self._client._get_auth_headers(),
         )
 
-        self.instance_id = response["id"]
+        self.instance_id = response["instance_id"]
         self._client.state_manager.set_instance_id(self.instance_id)
+
+    def _report_instance(self) -> None:
+        """Send instance telemetry to vandoor."""
+        if not self.instance_id:
+            self._ensure_instance()
+
+        try:
+            import base64
+            import json
+            import socket
+
+            # Get hostname for instance tag
+            try:
+                hostname = socket.gethostname()
+            except Exception as e:
+                logger.debug(f"Failed to get hostname: {e}")
+                hostname = "unknown"
+
+            # Create instance tags with hostname as instance name
+            instance_tags = {"force": True, "tags": {"name": hostname}}
+            instance_tags_b64 = base64.b64encode(
+                json.dumps(instance_tags).encode()
+            ).decode()
+
+            # cluster_id is same as instance_id for non-K8s environments
+            headers = {
+                **self._client._get_auth_headers(),
+                "X-Replicated-InstanceID": self.instance_id,
+                "X-Replicated-ClusterID": self.instance_id,
+                "X-Replicated-AppStatus": self._status,
+                "X-Replicated-InstanceTagData": instance_tags_b64,
+            }
+
+            self._client.http_client._make_request(
+                "POST",
+                "/kots_metrics/license_instance/info",
+                headers=headers,
+                json_data={},
+            )
+        except Exception as e:
+            # Telemetry is optional - don't fail if it doesn't work
+            logger.debug(f"Failed to report instance telemetry: {e}")
 
     def __getattr__(self, name: str) -> Any:
         """Access additional instance data."""
@@ -153,56 +186,42 @@ class AsyncInstance:
         self.customer_id = customer_id
         self.instance_id = instance_id
         self._data = kwargs
+        self._status = "ready"
+        self._metrics: dict[str, Union[int, float, str]] = {}
 
     async def send_metric(self, name: str, value: Union[int, float, str]) -> None:
         """Send a metric for this instance."""
         if not self.instance_id:
             await self._ensure_instance()
 
+        # Merge metric with existing metrics (overwrite = false behavior)
+        self._metrics[name] = value
+
+        # Build headers with instance data
+        headers = {
+            **self._client._get_auth_headers(),
+            "X-Replicated-InstanceID": self.instance_id,
+            "X-Replicated-ClusterID": self.instance_id,
+            "X-Replicated-AppStatus": self._status,
+        }
+
         await self._client.http_client._make_request_async(
             "POST",
-            f"/api/v1/instances/{self.instance_id}/metrics",
-            json_data={"name": name, "value": value},
-            headers=self._client._get_auth_headers(),
+            "/application/custom-metrics",
+            json_data={"data": self._metrics},
+            headers=headers,
         )
 
-    async def delete_metric(self, name: str) -> None:
-        """Delete a metric for this instance."""
+    async def set_status(self, status: str) -> None:
+        """Set the status of this instance for telemetry reporting."""
         if not self.instance_id:
             await self._ensure_instance()
 
-        await self._client.http_client._make_request_async(
-            "DELETE",
-            f"/api/v1/instances/{self.instance_id}/metrics/{name}",
-            headers=self._client._get_auth_headers(),
-        )
-
-    async def set_status(self, status: InstanceStatus) -> None:
-        """Set the status of this instance."""
-        if not self.instance_id:
-            await self._ensure_instance()
-
-        await self._client.http_client._make_request_async(
-            "PATCH",
-            f"/api/v1/instances/{self.instance_id}",
-            json_data={"status": status.value},
-            headers=self._client._get_auth_headers(),
-        )
-
-    async def set_version(self, version: str) -> None:
-        """Set the version of this instance."""
-        if not self.instance_id:
-            await self._ensure_instance()
-
-        await self._client.http_client._make_request_async(
-            "PATCH",
-            f"/api/v1/instances/{self.instance_id}",
-            json_data={"version": version},
-            headers=self._client._get_auth_headers(),
-        )
+        self._status = status
+        await self._report_instance()
 
     async def _ensure_instance(self) -> None:
-        """Ensure the instance exists and is cached."""
+        """Ensure the instance ID is generated and cached."""
         if self.instance_id:
             return
 
@@ -216,13 +235,58 @@ class AsyncInstance:
         fingerprint = get_machine_fingerprint()
         response = await self._client.http_client._make_request_async(
             "POST",
-            f"/api/v1/customers/{self.customer_id}/instances",
-            json_data={"fingerprint": fingerprint},
+            "/v3/instance",
+            json_data={
+                "machine_fingerprint": fingerprint,
+                "app_status": "missing",
+            },
             headers=self._client._get_auth_headers(),
         )
 
-        self.instance_id = response["id"]
+        self.instance_id = response["instance_id"]
         self._client.state_manager.set_instance_id(self.instance_id)
+
+    async def _report_instance(self) -> None:
+        """Send instance telemetry to vandoor."""
+        if not self.instance_id:
+            await self._ensure_instance()
+
+        try:
+            import base64
+            import json
+            import socket
+
+            # Get hostname for instance tag
+            try:
+                hostname = socket.gethostname()
+            except Exception as e:
+                logger.debug(f"Failed to get hostname: {e}")
+                hostname = "unknown"
+
+            # Create instance tags with hostname as instance name
+            instance_tags = {"force": True, "tags": {"name": hostname}}
+            instance_tags_b64 = base64.b64encode(
+                json.dumps(instance_tags).encode()
+            ).decode()
+
+            # cluster_id is same as instance_id for non-K8s environments
+            headers = {
+                **self._client._get_auth_headers(),
+                "X-Replicated-InstanceID": self.instance_id,
+                "X-Replicated-ClusterID": self.instance_id,
+                "X-Replicated-AppStatus": self._status,
+                "X-Replicated-InstanceTagData": instance_tags_b64,
+            }
+
+            await self._client.http_client._make_request_async(
+                "POST",
+                "/kots_metrics/license_instance/info",
+                headers=headers,
+                json_data={},
+            )
+        except Exception as e:
+            # Telemetry is optional - don't fail if it doesn't work
+            logger.debug(f"Failed to report instance telemetry: {e}")
 
     def __getattr__(self, name: str) -> Any:
         """Access additional instance data."""
