@@ -78,7 +78,7 @@ The asynchronous version of ReplicatedClient with identical API but requiring `a
 
 #### Constructor
 
-Same parameters as `ReplicatedClient`, including the optional `state_directory`.
+Same parameters as `ReplicatedClient`
 
 #### Context Manager
 
