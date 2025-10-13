@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .http_client import SyncHTTPClient
 from .services import CustomerService
@@ -14,17 +14,19 @@ class ReplicatedClient:
         app_slug: str,
         base_url: str = "https://replicated.app",
         timeout: float = 30.0,
+        state_directory: Optional[str] = None,
     ) -> None:
         self.publishable_key = publishable_key
         self.app_slug = app_slug
         self.base_url = base_url
         self.timeout = timeout
+        self.state_directory = state_directory
 
         self.http_client = SyncHTTPClient(
             base_url=base_url,
             timeout=timeout,
         )
-        self.state_manager = StateManager(app_slug)
+        self.state_manager = StateManager(app_slug, state_directory=state_directory)
         self.customer = CustomerService(self)
 
     def __enter__(self) -> "ReplicatedClient":
