@@ -129,6 +129,37 @@ class TestAsyncReplicatedClient:
             assert custom_dir.exists()
 
     @pytest.mark.asyncio
+    async def test_custom_state_directory_with_tilde(self):
+        """Test that ~ expansion works in async client custom state directory."""
+        client = AsyncReplicatedClient(
+            publishable_key="pk_test_123",
+            app_slug="my-app",
+            state_directory="~/test-replicated-state",
+        )
+        # Should be expanded to actual home directory
+        assert "~" not in str(client.state_manager._state_dir)
+        assert str(client.state_manager._state_dir).startswith(str(Path.home()))
+
+    @pytest.mark.asyncio
+    async def test_custom_state_directory_relative_path(self):
+        """Test that relative paths are resolved in async client."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Change to temp directory and use relative path
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                client = AsyncReplicatedClient(
+                    publishable_key="pk_test_123",
+                    app_slug="my-app",
+                    state_directory="./relative_state",
+                )
+                # Should be resolved to absolute path
+                assert client.state_manager._state_dir.is_absolute()
+                assert str(tmpdir) in str(client.state_manager._state_dir)
+            finally:
+                os.chdir(original_cwd)
+
+    @pytest.mark.asyncio
     async def test_default_state_directory_unchanged(self):
         """Test that async client default behavior is unchanged."""
         client = AsyncReplicatedClient(publishable_key="pk_test_123", app_slug="my-app")
