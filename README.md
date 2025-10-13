@@ -34,6 +34,34 @@ instance.set_status(InstanceStatus.RUNNING)
 instance.set_version("1.2.0")
 ```
 
+### Custom State Directory
+
+By default, the SDK stores state in platform-specific directories. You can override this for testing, containerization, or custom deployments:
+
+```python
+from replicated import ReplicatedClient
+
+# Use a custom directory (supports ~ and relative paths)
+client = ReplicatedClient(
+    publishable_key="replicated_pk_...",
+    app_slug="my-app",
+    state_directory="/var/lib/my-app/replicated-state"
+)
+
+# Or use a relative path (will be resolved to absolute)
+client = ReplicatedClient(
+    publishable_key="replicated_pk_...",
+    app_slug="my-app",
+    state_directory="./local-state"
+)
+```
+
+**When to use custom state directories:**
+- Testing with temporary directories
+- Docker containers with mounted volumes
+- Multi-tenant applications requiring isolated state
+- Development with project-local state
+
 ### Async Example
 
 ```python
