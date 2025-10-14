@@ -98,6 +98,68 @@ class TestReplicatedClient:
         assert "my-app" in state_dir_str
         assert "Replicated" in state_dir_str
 
+    def test_client_has_machine_id(self):
+        """Test that client initializes with a machine_id."""
+        client = ReplicatedClient(publishable_key="pk_test_123", app_slug="my-app")
+        assert hasattr(client, "_machine_id")
+        assert client._machine_id is not None
+        assert isinstance(client._machine_id, str)
+        assert len(client._machine_id) == 64  # SHA256 hash
+
+    @patch("replicated.http_client.httpx.Client")
+    def test_instance_has_machine_id_from_client(self, mock_httpx):
+        """Test that instances created from client have the client's machine_id."""
+        from replicated.resources import Instance
+
+        mock_response = Mock()
+        mock_response.is_success = True
+        mock_response.json.return_value = {
+            "customer": {
+                "id": "customer_123",
+                "email": "test@example.com",
+                "name": "test user",
+                "serviceToken": "service_token_123",
+                "instanceId": "instance_123",
+            }
+        }
+
+        mock_client = Mock()
+        mock_client.request.return_value = mock_response
+        mock_httpx.return_value = mock_client
+
+        client = ReplicatedClient(publishable_key="pk_test_123", app_slug="my-app")
+        customer = client.customer.get_or_create("test@example.com")
+        instance = customer.get_or_create_instance()
+
+        assert isinstance(instance, Instance)
+        assert hasattr(instance, "_machine_id")
+        assert instance._machine_id == client._machine_id
+
+    @patch("replicated.http_client.httpx.Client")
+    def test_instance_uses_machine_id_in_headers(self, mock_httpx):
+        """Test that instance methods use machine_id as cluster ID in headers."""
+        from replicated.resources import Instance
+
+        mock_response = Mock()
+        mock_response.is_success = True
+        mock_response.json.return_value = {}
+
+        mock_client = Mock()
+        mock_client.request.return_value = mock_response
+        mock_httpx.return_value = mock_client
+
+        client = ReplicatedClient(publishable_key="pk_test_123", app_slug="my-app")
+        instance = Instance(client, "customer_123", "instance_123")
+
+        # Send a metric
+        instance.send_metric("test_metric", 42)
+
+        # Verify the request was made with correct headers
+        call_args = mock_client.request.call_args
+        headers = call_args[1]["headers"]
+        assert "X-Replicated-ClusterID" in headers
+        assert headers["X-Replicated-ClusterID"] == client._machine_id
+
 
 class TestAsyncReplicatedClient:
     @pytest.mark.asyncio
@@ -168,3 +230,74 @@ class TestAsyncReplicatedClient:
         state_dir_str = str(client.state_manager._state_dir)
         assert "my-app" in state_dir_str
         assert "Replicated" in state_dir_str
+
+    @pytest.mark.asyncio
+    async def test_client_has_machine_id(self):
+        """Test that async client initializes with a machine_id."""
+        client = AsyncReplicatedClient(publishable_key="pk_test_123", app_slug="my-app")
+        assert hasattr(client, "_machine_id")
+        assert client._machine_id is not None
+        assert isinstance(client._machine_id, str)
+        assert len(client._machine_id) == 64  # SHA256 hash
+
+    @pytest.mark.asyncio
+    async def test_instance_has_machine_id_from_client(self):
+        """Test that async instances have the client's machine_id."""
+        from replicated.resources import AsyncInstance
+
+        with patch("replicated.http_client.httpx.AsyncClient") as mock_httpx:
+            mock_response = Mock()
+            mock_response.is_success = True
+            mock_response.json.return_value = {
+                "customer": {
+                    "id": "customer_123",
+                    "email": "test@example.com",
+                    "name": "test user",
+                    "serviceToken": "service_token_123",
+                    "instanceId": "instance_123",
+                }
+            }
+
+            mock_client = Mock()
+            mock_client.request.return_value = mock_response
+            mock_httpx.return_value = mock_client
+
+            client = AsyncReplicatedClient(
+                publishable_key="pk_test_123", app_slug="my-app"
+            )
+            customer = await client.customer.get_or_create("test@example.com")
+            instance = await customer.get_or_create_instance()
+
+            assert isinstance(instance, AsyncInstance)
+            assert hasattr(instance, "_machine_id")
+            assert instance._machine_id == client._machine_id
+
+    @pytest.mark.asyncio
+    async def test_instance_uses_machine_id_in_headers(self):
+        """Test that async instance methods use machine_id as cluster ID in headers."""
+        from unittest.mock import AsyncMock
+
+        from replicated.resources import AsyncInstance
+
+        with patch("replicated.http_client.httpx.AsyncClient") as mock_httpx:
+            mock_response = Mock()
+            mock_response.is_success = True
+            mock_response.json.return_value = {}
+
+            mock_client = Mock()
+            mock_client.request = AsyncMock(return_value=mock_response)
+            mock_httpx.return_value = mock_client
+
+            client = AsyncReplicatedClient(
+                publishable_key="pk_test_123", app_slug="my-app"
+            )
+            instance = AsyncInstance(client, "customer_123", "instance_123")
+
+            # Send a metric
+            await instance.send_metric("test_metric", 42)
+
+            # Verify the request was made with correct headers
+            call_args = mock_client.request.call_args
+            headers = call_args[1]["headers"]
+            assert "X-Replicated-ClusterID" in headers
+            assert headers["X-Replicated-ClusterID"] == client._machine_id

@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional
 
+from .fingerprint import get_machine_fingerprint
 from .http_client import AsyncHTTPClient
 from .services import AsyncCustomerService
 from .state import StateManager
@@ -21,6 +22,7 @@ class AsyncReplicatedClient:
         self.base_url = base_url
         self.timeout = timeout
         self.state_directory = state_directory
+        self._machine_id = get_machine_fingerprint()
 
         self.http_client = AsyncHTTPClient(
             base_url=base_url,
