@@ -64,6 +64,7 @@ class Instance:
         self._client = client
         self.customer_id = customer_id
         self.instance_id = instance_id
+        self._machine_id = client._machine_id
         self._data = kwargs
         self._status = "ready"
         self._metrics: dict[str, Union[int, float, str]] = {}
@@ -80,7 +81,7 @@ class Instance:
         headers = {
             **self._client._get_auth_headers(),
             "X-Replicated-InstanceID": self.instance_id,
-            "X-Replicated-ClusterID": self.instance_id,
+            "X-Replicated-ClusterID": self._machine_id,
             "X-Replicated-AppStatus": self._status,
         }
 
@@ -148,11 +149,10 @@ class Instance:
                 json.dumps(instance_tags).encode()
             ).decode()
 
-            # cluster_id is same as instance_id for non-K8s environments
             headers = {
                 **self._client._get_auth_headers(),
                 "X-Replicated-InstanceID": self.instance_id,
-                "X-Replicated-ClusterID": self.instance_id,
+                "X-Replicated-ClusterID": self._machine_id,
                 "X-Replicated-AppStatus": self._status,
                 "X-Replicated-InstanceTagData": instance_tags_b64,
             }
@@ -185,6 +185,7 @@ class AsyncInstance:
         self._client = client
         self.customer_id = customer_id
         self.instance_id = instance_id
+        self._machine_id = client._machine_id
         self._data = kwargs
         self._status = "ready"
         self._metrics: dict[str, Union[int, float, str]] = {}
@@ -201,7 +202,7 @@ class AsyncInstance:
         headers = {
             **self._client._get_auth_headers(),
             "X-Replicated-InstanceID": self.instance_id,
-            "X-Replicated-ClusterID": self.instance_id,
+            "X-Replicated-ClusterID": self._machine_id,
             "X-Replicated-AppStatus": self._status,
         }
 
@@ -269,11 +270,10 @@ class AsyncInstance:
                 json.dumps(instance_tags).encode()
             ).decode()
 
-            # cluster_id is same as instance_id for non-K8s environments
             headers = {
                 **self._client._get_auth_headers(),
                 "X-Replicated-InstanceID": self.instance_id,
-                "X-Replicated-ClusterID": self.instance_id,
+                "X-Replicated-ClusterID": self._machine_id,
                 "X-Replicated-AppStatus": self._status,
                 "X-Replicated-InstanceTagData": instance_tags_b64,
             }
