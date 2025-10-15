@@ -16,19 +16,17 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Fetch all history for setuptools_scm to work properly
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
       with:
-        python-version: '3.11'
-    
-    - name: Install build dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install build
-    
+        version: "latest"
+
+    - name: Set up Python
+      run: uv python install 3.11
+
     - name: Build package
-      run: python -m build
+      run: uv build
     
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
