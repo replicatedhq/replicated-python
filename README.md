@@ -4,7 +4,15 @@ A Python SDK for embedding Replicated customer, custom metrics, and instance ins
 
 ## Installation
 
-Install the SDK via pip:
+### Using uv (recommended)
+
+[uv](https://github.com/astral-sh/uv) is a fast Python package installer (10-100x faster than pip):
+
+```bash
+uv pip install replicated
+```
+
+### Using pip
 
 ```bash
 pip install --upgrade replicated

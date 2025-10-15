@@ -2,6 +2,14 @@
 
 ## Installation
 
+### Using uv (recommended)
+
+```bash
+uv pip install replicated
+```
+
+### Using pip
+
 ```bash
 pip install replicated
 ```

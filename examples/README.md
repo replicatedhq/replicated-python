@@ -2,6 +2,30 @@
 
 This directory contains examples demonstrating how to use the Replicated Python SDK.
 
+## Setup
+
+Before running the examples, install the SDK and its dependencies.
+
+### Using uv (recommended)
+
+```bash
+# Install dependencies
+uv sync --extra dev
+
+# Run an example
+uv run examples/basic_example.py --publishable-key "your_key" --app-slug "your-app"
+```
+
+### Using pip
+
+```bash
+# Install dependencies
+pip install -e .[dev]
+
+# Run an example
+python examples/basic_example.py --publishable-key "your_key" --app-slug "your-app"
+```
+
 ## Basic Example
 
 The `basic_example.py` script demonstrates the most fundamental usage of the SDK:
