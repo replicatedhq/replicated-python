@@ -67,6 +67,7 @@ class Instance:
         self._machine_id = client._machine_id
         self._data = kwargs
         self._status = "ready"
+        self._version = ""
         self._metrics: dict[str, Union[int, float, str]] = {}
 
     def send_metric(self, name: str, value: Union[int, float, str]) -> None:
@@ -98,6 +99,14 @@ class Instance:
             self._ensure_instance()
 
         self._status = status
+        self._report_instance()
+
+    def set_version(self, version: str) -> None:
+        """Set the version of this instance for telemetry reporting."""
+        if not self.instance_id:
+            self._ensure_instance()
+
+        self._version = version
         self._report_instance()
 
     def _ensure_instance(self) -> None:
@@ -154,6 +163,7 @@ class Instance:
                 "X-Replicated-InstanceID": self.instance_id,
                 "X-Replicated-ClusterID": self._machine_id,
                 "X-Replicated-AppStatus": self._status,
+                "X-Replicated-VersionLabel": self._version,
                 "X-Replicated-InstanceTagData": instance_tags_b64,
             }
 
@@ -188,6 +198,7 @@ class AsyncInstance:
         self._machine_id = client._machine_id
         self._data = kwargs
         self._status = "ready"
+        self._version = ""
         self._metrics: dict[str, Union[int, float, str]] = {}
 
     async def send_metric(self, name: str, value: Union[int, float, str]) -> None:
@@ -219,6 +230,14 @@ class AsyncInstance:
             await self._ensure_instance()
 
         self._status = status
+        await self._report_instance()
+
+    async def set_version(self, version: str) -> None:
+        """Set the version of this instance for telemetry reporting."""
+        if not self.instance_id:
+            await self._ensure_instance()
+
+        self._version = version
         await self._report_instance()
 
     async def _ensure_instance(self) -> None:
@@ -275,6 +294,7 @@ class AsyncInstance:
                 "X-Replicated-InstanceID": self.instance_id,
                 "X-Replicated-ClusterID": self._machine_id,
                 "X-Replicated-AppStatus": self._status,
+                "X-Replicated-VersionLabel": self._version,
                 "X-Replicated-InstanceTagData": instance_tags_b64,
             }
 
