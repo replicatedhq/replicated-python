@@ -16,7 +16,7 @@ class CustomerService:
     def get_or_create(
         self,
         email_address: str,
-        channel: Optional[str] = None,
+        channel: str = "Stable",
         name: Optional[str] = None,
     ) -> Customer:
         """Get or create a customer."""
@@ -82,7 +82,7 @@ class AsyncCustomerService:
     async def get_or_create(
         self,
         email_address: str,
-        channel: Optional[str] = None,
+        channel: str = "Stable",
         name: Optional[str] = None,
     ) -> AsyncCustomer:
         """Get or create a customer."""
