@@ -133,9 +133,12 @@ class Instance:
     def _ensure_instance(self) -> None:
         """Ensure the instance ID is generated and cached."""
         if self.instance_id:
-            # If we have an instance ID but a service token was provided, replace dynamic token
+            # If we have an instance ID but a service token was provided,
+            # replace dynamic token
             if self._service_account_token:
-                self._client.state_manager.set_dynamic_token(self._service_account_token)
+                self._client.state_manager.set_dynamic_token(
+                    self._service_account_token
+                )
             return
 
         # Check if instance ID is cached
@@ -144,7 +147,9 @@ class Instance:
             self.instance_id = cached_instance_id
             # If we have a service token provided, replace dynamic token
             if self._service_account_token:
-                self._client.state_manager.set_dynamic_token(self._service_account_token)
+                self._client.state_manager.set_dynamic_token(
+                    self._service_account_token
+                )
             return
 
         # Create new instance
@@ -279,9 +284,12 @@ class AsyncInstance:
     async def _ensure_instance(self) -> None:
         """Ensure the instance ID is generated and cached."""
         if self.instance_id:
-            # If we have an instance ID but a service token was provided, replace dynamic token
+            # If we have an instance ID but a service token was provided,
+            # replace dynamic token
             if self._service_account_token:
-                self._client.state_manager.set_dynamic_token(self._service_account_token)
+                self._client.state_manager.set_dynamic_token(
+                    self._service_account_token
+                )
             return
 
         # Check if instance ID is cached
@@ -290,7 +298,9 @@ class AsyncInstance:
             self.instance_id = cached_instance_id
             # If we have a service token provided, replace dynamic token
             if self._service_account_token:
-                self._client.state_manager.set_dynamic_token(self._service_account_token)
+                self._client.state_manager.set_dynamic_token(
+                    self._service_account_token
+                )
             return
 
         # Create new instance

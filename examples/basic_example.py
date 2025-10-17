@@ -86,7 +86,7 @@ def main():
         if token_after_instance:
             print(f"  Service token: {token_after_instance}")
             if token_after_customer != token_after_instance:
-                print(f"  ⚠️  Token was replaced by instance-specific token")
+                print("  ⚠️  Token was replaced by instance-specific token")
 
         # Set instance status
         instance.set_status(args.status)

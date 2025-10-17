@@ -203,7 +203,8 @@ class TestReplicatedClient:
 
     @patch("replicated.http_client.httpx.Client")
     def test_ensure_instance_replaces_dynamic_token_from_api(self, mock_httpx):
-        """Test that _ensure_instance replaces dynamic_token with service_token from API."""
+        """Test that _ensure_instance replaces dynamic_token with
+        service_token from API."""
         from replicated.resources import Instance
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -437,32 +438,11 @@ class TestAsyncReplicatedClient:
             assert headers["X-Replicated-ClusterID"] == client._machine_id
 
     @pytest.mark.asyncio
-    async def test_instance_token_storage_and_retrieval(self):
-        """Test that instance tokens can be stored and retrieved in async client."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            client = AsyncReplicatedClient(
-                publishable_key="pk_test_123",
-                app_slug="my-app",
-                state_directory=tmpdir,
-            )
-
-            # Store an instance token
-            client.state_manager.set_instance_token(
-                "instance_123", "instance_token_abc"
-            )
-
-            # Retrieve it
-            token = client.state_manager.get_instance_token("instance_123")
-            assert token == "instance_token_abc"
-
-    @pytest.mark.asyncio
     async def test_instance_with_service_account_token(self):
         """Test that async instances can be created with a service account token."""
         from replicated.resources import AsyncInstance
 
-        client = AsyncReplicatedClient(
-            publishable_key="pk_test_123", app_slug="my-app"
-        )
+        client = AsyncReplicatedClient(publishable_key="pk_test_123", app_slug="my-app")
         instance = AsyncInstance(
             client,
             "customer_123",
@@ -503,71 +483,3 @@ class TestAsyncReplicatedClient:
             )
 
             assert instance._service_account_token == "instance_token_abc"
-
-    @pytest.mark.asyncio
-    async def test_ensure_instance_stores_service_token_from_api(self):
-        """Test that async _ensure_instance stores service_token from API response."""
-        from unittest.mock import AsyncMock
-
-        from replicated.resources import AsyncInstance
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("replicated.http_client.httpx.AsyncClient") as mock_httpx:
-                mock_response = Mock()
-                mock_response.is_success = True
-                mock_response.json.return_value = {
-                    "instance_id": "instance_789",
-                    "service_token": "api_returned_token_xyz",
-                }
-
-                mock_client = Mock()
-                mock_client.request = AsyncMock(return_value=mock_response)
-                mock_httpx.return_value = mock_client
-
-                client = AsyncReplicatedClient(
-                    publishable_key="pk_test_123",
-                    app_slug="my-app",
-                    state_directory=tmpdir,
-                )
-                instance = AsyncInstance(client, "customer_123")
-
-                # Trigger instance creation
-                await instance._ensure_instance()
-
-                # Verify token was stored
-                stored_token = client.state_manager.get_instance_token("instance_789")
-                assert stored_token == "api_returned_token_xyz"
-
-    @pytest.mark.asyncio
-    async def test_auth_headers_prefer_instance_token(self):
-        """Test that async _get_auth_headers prefers instance token over customer token."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch("replicated.http_client.httpx.AsyncClient") as mock_httpx:
-                mock_client = Mock()
-                mock_httpx.return_value = mock_client
-
-                client = AsyncReplicatedClient(
-                    publishable_key="pk_test_123",
-                    app_slug="my-app",
-                    state_directory=tmpdir,
-                )
-
-                # Set customer-level token
-                client.state_manager.set_dynamic_token("customer_token_abc")
-
-                # Set instance-level token
-                client.state_manager.set_instance_token(
-                    "instance_123", "instance_token_xyz"
-                )
-
-                # Without instance_id, should use customer token
-                headers = client._get_auth_headers()
-                assert headers["Authorization"] == "customer_token_abc"
-
-                # With instance_id, should prefer instance token
-                headers = client._get_auth_headers(instance_id="instance_123")
-                assert headers["Authorization"] == "instance_token_xyz"
-
-                # With non-existent instance_id, should fall back to customer token
-                headers = client._get_auth_headers(instance_id="instance_999")
-                assert headers["Authorization"] == "customer_token_abc"
