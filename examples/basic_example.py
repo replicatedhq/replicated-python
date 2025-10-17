@@ -71,10 +71,22 @@ def main():
         )
         print(f"✓ Customer created/retrieved - ID: {customer.customer_id}")
 
+        # Display service token after customer creation
+        token_after_customer = client.state_manager.get_dynamic_token()
+        if token_after_customer:
+            print(f"  Service token: {token_after_customer}")
+
         # Create or get instance
         print("\nCreating/getting instance for customer...")
         instance = customer.get_or_create_instance()
         print(f"✓ Instance created/retrieved - ID: {instance.instance_id}")
+
+        # Display service token after instance creation (may have been replaced)
+        token_after_instance = client.state_manager.get_dynamic_token()
+        if token_after_instance:
+            print(f"  Service token: {token_after_instance}")
+            if token_after_customer != token_after_instance:
+                print(f"  ⚠️  Token was replaced by instance-specific token")
 
         # Set instance status
         instance.set_status(args.status)
@@ -88,6 +100,14 @@ def main():
         print("\n🎉 Basic example completed successfully!")
         print(f"Customer ID: {customer.customer_id}")
         print(f"Instance ID: {instance.instance_id}")
+
+        # Show final token
+        final_token = client.state_manager.get_dynamic_token()
+        print("\nService Token Information:")
+        if final_token:
+            print(f"  Active service token: {final_token}")
+        else:
+            print("  Service token: Not available")
 
 
 if __name__ == "__main__":

@@ -27,14 +27,26 @@ class Customer:
         self.channel = channel
         self._data = kwargs
 
-    def get_or_create_instance(self) -> Union["Instance", "AsyncInstance"]:
+    def get_or_create_instance(
+        self, service_account_token: Optional[str] = None
+    ) -> Union["Instance", "AsyncInstance"]:
         """Get or create an instance for this customer."""
         if hasattr(self._client, "_get_or_create_instance_async"):
             # type: ignore[arg-type]
-            return AsyncInstance(self._client, self.customer_id, self.instance_id)
+            return AsyncInstance(
+                self._client,
+                self.customer_id,
+                self.instance_id,
+                service_account_token=service_account_token,
+            )
         else:
             # type: ignore[arg-type]
-            return Instance(self._client, self.customer_id, self.instance_id)
+            return Instance(
+                self._client,
+                self.customer_id,
+                self.instance_id,
+                service_account_token=service_account_token,
+            )
 
     def __getattr__(self, name: str) -> Any:
         """Access additional customer data."""
@@ -45,10 +57,17 @@ class AsyncCustomer(Customer):
     """Async version of Customer."""
 
     # type: ignore[override]
-    async def get_or_create_instance(self) -> "AsyncInstance":
+    async def get_or_create_instance(
+        self, service_account_token: Optional[str] = None
+    ) -> "AsyncInstance":
         """Get or create an instance for this customer."""
         # type: ignore[arg-type]
-        return AsyncInstance(self._client, self.customer_id, self.instance_id)
+        return AsyncInstance(
+            self._client,
+            self.customer_id,
+            self.instance_id,
+            service_account_token=service_account_token,
+        )
 
 
 class Instance:
@@ -59,11 +78,13 @@ class Instance:
         client: "ReplicatedClient",
         customer_id: str,
         instance_id: Optional[str] = None,
+        service_account_token: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         self._client = client
         self.customer_id = customer_id
         self.instance_id = instance_id
+        self._service_account_token = service_account_token
         self._machine_id = client._machine_id
         self._data = kwargs
         self._status = "ready"
@@ -112,12 +133,18 @@ class Instance:
     def _ensure_instance(self) -> None:
         """Ensure the instance ID is generated and cached."""
         if self.instance_id:
+            # If we have an instance ID but a service token was provided, replace dynamic token
+            if self._service_account_token:
+                self._client.state_manager.set_dynamic_token(self._service_account_token)
             return
 
         # Check if instance ID is cached
         cached_instance_id = self._client.state_manager.get_instance_id()
         if cached_instance_id:
             self.instance_id = cached_instance_id
+            # If we have a service token provided, replace dynamic token
+            if self._service_account_token:
+                self._client.state_manager.set_dynamic_token(self._service_account_token)
             return
 
         # Create new instance
@@ -134,6 +161,13 @@ class Instance:
 
         self.instance_id = response["instance_id"]
         self._client.state_manager.set_instance_id(self.instance_id)
+
+        # If API returns a service_token, replace the dynamic token with it
+        if "service_token" in response:
+            self._client.state_manager.set_dynamic_token(response["service_token"])
+        # Otherwise, if user provided a service token, use that
+        elif self._service_account_token:
+            self._client.state_manager.set_dynamic_token(self._service_account_token)
 
     def _report_instance(self) -> None:
         """Send instance telemetry to vandoor."""
@@ -190,11 +224,13 @@ class AsyncInstance:
         client: "AsyncReplicatedClient",
         customer_id: str,
         instance_id: Optional[str] = None,
+        service_account_token: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         self._client = client
         self.customer_id = customer_id
         self.instance_id = instance_id
+        self._service_account_token = service_account_token
         self._machine_id = client._machine_id
         self._data = kwargs
         self._status = "ready"
@@ -243,12 +279,18 @@ class AsyncInstance:
     async def _ensure_instance(self) -> None:
         """Ensure the instance ID is generated and cached."""
         if self.instance_id:
+            # If we have an instance ID but a service token was provided, replace dynamic token
+            if self._service_account_token:
+                self._client.state_manager.set_dynamic_token(self._service_account_token)
             return
 
         # Check if instance ID is cached
         cached_instance_id = self._client.state_manager.get_instance_id()
         if cached_instance_id:
             self.instance_id = cached_instance_id
+            # If we have a service token provided, replace dynamic token
+            if self._service_account_token:
+                self._client.state_manager.set_dynamic_token(self._service_account_token)
             return
 
         # Create new instance
@@ -265,6 +307,13 @@ class AsyncInstance:
 
         self.instance_id = response["instance_id"]
         self._client.state_manager.set_instance_id(self.instance_id)
+
+        # If API returns a service_token, replace the dynamic token with it
+        if "service_token" in response:
+            self._client.state_manager.set_dynamic_token(response["service_token"])
+        # Otherwise, if user provided a service token, use that
+        elif self._service_account_token:
+            self._client.state_manager.set_dynamic_token(self._service_account_token)
 
     async def _report_instance(self) -> None:
         """Send instance telemetry to vandoor."""
