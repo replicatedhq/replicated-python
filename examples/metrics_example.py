@@ -72,14 +72,21 @@ async def main():
         )
         print(f"✓ Customer created/retrieved - ID: {customer.customer_id}")
 
-        # Get or create the associated instance
-        instance = await customer.get_or_create_instance()
-        print(f"Instance ID: {instance.instance_id}")
-        print(f"✓ Instance created/retrieved - ID: {instance.instance_id}")
+        # Display service token after customer creation
+        token_after_customer = client.state_manager.get_dynamic_token()
+        if token_after_customer:
+            print(f"  Service token: {token_after_customer}")
 
         # Get or create the associated instance
         instance = await customer.get_or_create_instance()
-        print(f"Instance ID: {instance.instance_id}")
+        print(f"✓ Instance created/retrieved - ID: {instance.instance_id}")
+
+        # Display service token after instance creation (may have been replaced)
+        token_after_instance = client.state_manager.get_dynamic_token()
+        if token_after_instance:
+            print(f"  Service token: {token_after_instance}")
+            if token_after_customer != token_after_instance:
+                print("  ⚠️  Token was replaced by instance-specific token")
 
         # Set instance status
         await instance.set_status(args.status)
@@ -96,9 +103,19 @@ async def main():
             instance.send_metric("memory_usage", 0.67),
             instance.send_metric("disk_usage", 0.45),
         )
-        print("Metrics sent successfully")
+        print("✓ Metrics sent successfully")
 
-    print(f"Instance ID: {instance.instance_id}")
+        print("\n🎉 Metrics example completed successfully!")
+        print(f"Customer ID: {customer.customer_id}")
+        print(f"Instance ID: {instance.instance_id}")
+
+        # Show final token
+        final_token = client.state_manager.get_dynamic_token()
+        print("\nService Token Information:")
+        if final_token:
+            print(f"  Active service token: {final_token}")
+        else:
+            print("  Service token: Not available")
 
 
 if __name__ == "__main__":
