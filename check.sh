@@ -6,24 +6,24 @@ echo "🔍 Running all CI checks locally..."
 echo "=================================="
 
 echo "📦 Installing dependencies..."
-python3 -m pip install -e ".[dev]" > /dev/null 2>&1
+uv sync --extra dev > /dev/null 2>&1
 echo "✅ Dependencies installed"
 
 echo ""
 echo "🧪 Running tests..."
-python3 -m pytest
+uv run pytest
 echo "✅ Tests passed"
 
 echo ""
 echo "🔍 Running linting..."
-python3 -m flake8 replicated tests examples
-python3 -m mypy replicated
+uv run flake8 replicated tests examples
+uv run mypy replicated
 echo "✅ Linting passed"
 
 echo ""
 echo "🎨 Checking formatting..."
-python3 -m black --check replicated tests examples
-python3 -m isort --check-only replicated tests examples
+uv run black --check replicated tests examples
+uv run isort --check-only replicated tests examples
 echo "✅ Formatting passed"
 
 echo ""
